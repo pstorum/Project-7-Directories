@@ -1,5 +1,6 @@
 #include "inode.h"
 #include <stdio.h>
+#include <string.h>
 
 static struct inode incore[MAX_SYS_OPEN_FILES] = {0};
 
@@ -137,4 +138,9 @@ void iput(struct inode *in){
     if(in->ref_count == 0){
         write_inode(in);
     }
+}
+
+//function for reseting incore to init for testing purposes
+void incore_reset(void){
+    memset(&incore, 0, sizeof(incore));
 }
