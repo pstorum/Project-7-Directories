@@ -167,7 +167,7 @@ void test_ialloc(void){
     int truncate = 1;
     image_open(filename, truncate);
     init_image_fd();
-
+    incore_reset();
     //inode map is empty, inode_num of first returned inode should be zero
     struct inode *test_node = ialloc();
     CTEST_ASSERT(test_node->inode_num == 0, "Testing that the first returned inode has a inode_num value of zero");
@@ -191,6 +191,7 @@ void test_mkfs(void){
     char *filename = "test_file";
     int truncate = 1;
     image_open(filename, truncate);
+    incore_reset();
     mkfs();
 
     //check block 2 for correct allocation
@@ -293,6 +294,19 @@ void test_find_incore(void){
     //find inode that doesn't exist
     struct inode *test_find_node_3 = find_incore(3);
     CTEST_ASSERT(test_find_node_3 == NULL, "Testing, found no inode");
+
+    //test when incore is full.
+    struct inode *full = find_incore_free();
+    for(int i = 0; i<=MAX_SYS_OPEN_FILES; i++){
+        full = find_incore_free();
+        if(full == NULL){
+            break;
+        }
+        full->ref_count += 1;
+    }
+    CTEST_ASSERT(full == NULL, "Testing, found no free incore inode");
+    incore_reset();
+
 }
 void test_read_write_inode(void){
     //image setup
@@ -300,7 +314,7 @@ void test_read_write_inode(void){
     int truncate = 1;
     image_open(filename, truncate);
     init_image_fd();
-
+    incore_reset();
     //inode setup for writing
     struct inode *test_node = find_incore_free();
     test_node->size = 1;
@@ -332,6 +346,7 @@ void test_read_write_inode(void){
 }
 
 void test_iget_iput(void){
+    incore_reset();
     //tests for initial and repeated iget() on same inode_num
     struct inode *test_node = iget(120);
     CTEST_ASSERT(test_node->ref_count == 1, "Testing sucssesful returning of an inode from iget");
@@ -373,11 +388,10 @@ int main(void){
     test_set_free();
     test_find_free();
 
-    
+    test_ialloc();
     test_alloc();
     test_mkfs();
-    test_ialloc();
-
+    
     test_find_incore();
     test_read_write_inode();
     test_iget_iput();
